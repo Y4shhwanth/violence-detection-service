@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Violence Detection System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.6s ease;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            font-weight: 400;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab:hover {
+            background: rgba(102, 126, 234, 0.05);
+            color: #667eea;
+        }
+
+        .tab.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .tab-content {
+            padding: 40px;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-section h3 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .file-name {
+            margin-left: 15px;
+            color: #6c757d;
+            font-style: italic;
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: all 0.3s ease;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .loading-text {
+            font-size: 1.2rem;
+            color: #6c757d;
+        }
+
+        .results {
+            margin-top: 40px;
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .results-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .result-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .result-card:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .result-card h3 {
+            color: #667eea;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .prediction-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .prediction-class {
+            font-size: 1.8rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .prediction-class.violence {
+            color: #dc3545;
+        }
+
+        .prediction-class.non-violence {
+            color: #28a745;
+        }
+
+        .confidence {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #6c757d;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.8s ease;
+            border-radius: 10px;
+        }
+
+        .reasoning-box {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+
+        .reasoning-box h4 {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .reasoning-text {
+            color: #495057;
+            line-height: 1.8;
+            font-size: 1rem;
+        }
+
+        .keywords-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff3cd;
+            border-radius: 12px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .keywords-box h4 {
+            color: #856404;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .keywords-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .keyword-badge {
+            background: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            border: 2px solid #ffc107;
+            color: #856404;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .keyword-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        }
+
+        .frames-box {
+            margin-top: 24px;
+            padding: 20px;
+            background: #f8d7da;
+            border-radius: 12px;
+            border-left: 4px solid #dc3545;
+        }
+
+        .frames-box h4 {
+            color: #721c24;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .frame-item {
+            background: white;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 12px;
+            border-left: 4px solid #dc3545;
+            transition: all 0.2s ease;
+        }
+
+        .frame-item:hover {
+            transform: translateX(4px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.15);
+        }
+
+        .frame-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .frame-title {
+            color: #dc3545;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .frame-score {
+            background: #dc3545;
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .frame-reasoning {
+            color: #6c757d;
+            font-size: 0.95rem;
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        .frame-indicators {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .indicator-badge {
+            background: #f8f9fa;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+
+        .stats-box {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e7f3ff;
+            border-radius: 12px;
+            border-left: 4px solid #004085;
+        }
+
+        .stats-box h4 {
+            color: #004085;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            color: #004085;
+            font-size: 1.8rem;
+            font-weight: 800;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .header p { font-size: 1rem; }
+            .tab-content { padding: 20px; }
+            .result-card { padding: 20px; }
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🛡️ AI Violence Detection System</h1>
+        <p>Real-Time Multi-Modal Content Moderation for Social Media</p>
+    </div>
+
+    <div class="main-container">
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('multimodal')">Multimodal Analysis</button>
+            <button class="tab" onclick="switchTab('video')">Video Only</button>
+            <button class="tab" onclick="switchTab('text')">Text Only</button>
+        </div>
+
+        <div class="tab-content">
+            <!-- Multimodal Tab -->
+            <div id="multimodal-tab" class="tab-pane active">
+                <h2 style="margin-bottom: 10px; color: #2d3748;">Multimodal Violence Detection</h2>
+                <p style="color: #6c757d; margin-bottom: 30px;">Upload video/audio and add text description for comprehensive analysis</p>
+
+                <form id="multimodal-form" enctype="multipart/form-data">
+                    <div class="upload-section">
+                        <h3>📹 Video Upload</h3>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="video-input-multi" name="video" accept="video/*" class="file-input">
+                            <label for="video-input-multi" class="file-label">
+                                <span>📁</span> Choose Video File
+                            </label>
+                            <span class="file-name" id="video-name-multi">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <div class="upload-section">
+                        <h3>📝 Text Input</h3>
+                        <textarea class="text-input" name="text" placeholder="Enter text content, caption, or description to analyze for violent or harmful content..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">
+                        <span>🔍</span> Analyze Content
+                    </button>
+                </form>
+            </div>
+
+            <!-- Video Only Tab -->
+            <div id="video-tab" class="tab-pane">
+                <h2 style="margin-bottom: 10px; color: #2d3748;">Video Violence Detection</h2>
+                <p style="color: #6c757d; margin-bottom: 30px;">Upload a video file for analysis</p>
+
+                <form id="video-form" enctype="multipart/form-data">
+                    <div class="upload-section">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="video-input" name="video" accept="video/*" required class="file-input">
+                            <label for="video-input" class="file-label">
+                                <span>📁</span> Choose Video File
+                            </label>
+                            <span class="file-name" id="video-name">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">
+                        <span>🔍</span> Analyze Video
+                    </button>
+                </form>
+            </div>
+
+            <!-- Text Only Tab -->
+            <div id="text-tab" class="tab-pane">
+                <h2 style="margin-bottom: 10px; color: #2d3748;">Text Violence Detection</h2>
+                <p style="color: #6c757d; margin-bottom: 30px;">Enter text to detect hate speech or violent intent</p>
+
+                <form id="text-form">
+                    <div class="upload-section">
+                        <textarea class="text-input" id="text-input" placeholder="Enter text content, comment, or post to analyze..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">
+                        <span>🔍</span> Analyze Text
+                    </button>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p class="loading-text">Analyzing content... Please wait.</p>
+            </div>
+
+            <!-- Results -->
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

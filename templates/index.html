@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Based Violence Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
+        .upload-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .text-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            resize: vertical;
+            min-height: 100px;
+            margin-bottom: 20px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .result-item {
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-item h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .prediction {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .prediction-class {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .prediction-class.violence {
+            color: #dc3545;
+        }
+
+        .prediction-class.non-violence {
+            color: #28a745;
+        }
+
+        .confidence {
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.5s ease;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-name {
+            display: inline-block;
+            margin-left: 15px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ AI-Based Violence Detection System</h1>
+            <p>Real-Time Multi-Modal Content Moderation for Social Media</p>
+        </header>
+
+        <div class="main-card">
+            <div class="tab-buttons">
+                <button class="tab-btn active" onclick="switchTab('multimodal')">Multimodal Analysis</button>
+                <button class="tab-btn" onclick="switchTab('video')">Video Only</button>
+                <button class="tab-btn" onclick="switchTab('text')">Text Only</button>
+            </div>
+
+            <!-- Multimodal Tab -->
+            <div id="multimodal-tab" class="tab-content active">
+                <h2>Multimodal Violence Detection</h2>
+                <p style="color: #666; margin-bottom: 20px;">Upload video/audio and add text description for comprehensive analysis</p>
+
+                <form id="multimodal-form" enctype="multipart/form-data">
+                    <div class="upload-section">
+                        <h3>📹 Video Upload</h3>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="video-input-multi" name="video" accept="video/*">
+                            <label for="video-input-multi" class="file-input-label">Choose Video File</label>
+                            <span class="file-name" id="video-name-multi">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <div class="upload-section">
+                        <h3>📝 Text Input</h3>
+                        <textarea
+                            class="text-input"
+                            name="text"
+                            placeholder="Enter text content, caption, or description to analyze for violent or harmful content..."
+                        ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">🔍 Analyze Content</button>
+                </form>
+            </div>
+
+            <!-- Video Only Tab -->
+            <div id="video-tab" class="tab-content">
+                <h2>Video Violence Detection</h2>
+                <p style="color: #666; margin-bottom: 20px;">Upload a video file for analysis</p>
+
+                <form id="video-form" enctype="multipart/form-data">
+                    <div class="upload-section">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="video-input" name="video" accept="video/*" required>
+                            <label for="video-input" class="file-input-label">Choose Video File</label>
+                            <span class="file-name" id="video-name">No file chosen</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">🔍 Analyze Video</button>
+                </form>
+            </div>
+
+            <!-- Text Only Tab -->
+            <div id="text-tab" class="tab-content">
+                <h2>Text Violence Detection</h2>
+                <p style="color: #666; margin-bottom: 20px;">Enter text to detect hate speech or violent intent</p>
+
+                <form id="text-form">
+                    <div class="upload-section">
+                        <textarea
+                            class="text-input"
+                            id="text-input"
+                            placeholder="Enter text content, comment, or post to analyze..."
+                            required
+                        ></textarea>
+                    </div>
+
+                    <button type="submit" class="btn">🔍 Analyze Text</button>
+                </form>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing content... Please wait.</p>
+            </div>
+
+            <!-- Results -->
+            <div class="results" id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function switchTab(tab) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(`${tab}-tab`).classList.add('active');
+            event.target.classList.add('active');
+
+            // Clear results
+            document.getElementById('results').classList.remove('show');
+        }
+
+        // File name display
+        document.getElementById('video-input')?.addEventListener('change', function(e) {
+            document.getElementById('video-name').textContent = e.target.files[0]?.name || 'No file chosen';
+        });
+
+        document.getElementById('video-input-multi')?.addEventListener('change', function(e) {
+            document.getElementById('video-name-multi').textContent = e.target.files[0]?.name || 'No file chosen';
+        });
+
+        // Multimodal form submission
+        document.getElementById('multimodal-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            showLoading();
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                displayResults(data);
+            } catch (error) {
+                displayError('Error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Video form submission
+        document.getElementById('video-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            showLoading();
+
+            try {
+                const response = await fetch('/predict_video', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                displayVideoResults(data);
+            } catch (error) {
+                displayError('Error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Text form submission
+        document.getElementById('text-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const text = document.getElementById('text-input').value;
+            showLoading();
+
+            try {
+                const response = await fetch('/predict_text', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                displayTextResults(data);
+            } catch (error) {
+                displayError('Error: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+            document.getElementById('results').classList.remove('show');
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.success) {
+                displayError(data.message);
+                return;
+            }
+
+            let html = '<h2>🎯 Analysis Results</h2>';
+
+            if (data.fused_prediction) {
+                html += createResultCard('Fused Multimodal Prediction', data.fused_prediction);
+            }
+
+            if (data.video_prediction) {
+                html += createResultCard('Video Analysis', data.video_prediction);
+            }
+
+            if (data.audio_prediction) {
+                html += createResultCard('Audio Analysis', data.audio_prediction);
+            }
+
+            if (data.text_prediction) {
+                html += createResultCard('Text Analysis', data.text_prediction);
+            }
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function displayVideoResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.success) {
+                displayError(data.message);
+                return;
+            }
+
+            const html = '<h2>🎯 Video Analysis Results</h2>' +
+                        createResultCard('Video Detection', data);
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function displayTextResults(data) {
+            const resultsDiv = document.getElementById('results');
+
+            if (!data.success) {
+                displayError(data.message);
+                return;
+            }
+
+            const html = '<h2>🎯 Text Analysis Results</h2>' +
+                        createResultCard('Text Detection', data);
+
+            resultsDiv.innerHTML = html;
+            resultsDiv.classList.add('show');
+        }
+
+        function createResultCard(title, prediction) {
+            const isViolence = prediction.class === 'Violence';
+            const classColor = isViolence ? 'violence' : 'non-violence';
+            const confidence = Math.round(prediction.confidence);
+
+            let html = `
+                <div class="result-item">
+                    <h3>${title}</h3>
+                    <div class="prediction">
+                        <span class="prediction-class ${classColor}">${prediction.class}</span>
+                        <span class="confidence">${confidence}% Confidence</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${confidence}%"></div>
+                    </div>
+            `;
+
+            // Add reasoning
+            if (prediction.reasoning) {
+                html += `
+                    <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                        <h4 style="color: #667eea; margin-bottom: 10px;">📊 Detailed Reasoning:</h4>
+                        <p style="color: #333; line-height: 1.6;">${prediction.reasoning}</p>
+                    </div>
+                `;
+            }
+
+            // Add keywords (for text analysis)
+            if (prediction.keywords_found && prediction.keywords_found.length > 0) {
+                html += `
+                    <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                        <h4 style="color: #856404; margin-bottom: 10px;">🔑 Keywords Detected:</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${prediction.keywords_found.map(kw => `
+                                <span style="background: #fff; padding: 5px 12px; border-radius: 15px; font-size: 0.9em; border: 1px solid #ffc107;">
+                                    ${kw}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add ML score (for text analysis)
+            if (prediction.ml_score !== undefined) {
+                html += `
+                    <div style="margin-top: 15px;">
+                        <p style="color: #666;">
+                            <strong>ML Model Score:</strong> ${prediction.ml_score.toFixed(1)}%
+                        </p>
+                    </div>
+                `;
+            }
+
+            // Add detected sounds (for audio analysis)
+            if (prediction.detected_sounds && prediction.detected_sounds.length > 0) {
+                html += `
+                    <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                        <h4 style="color: #856404; margin-bottom: 10px;">🔊 Detected Sounds:</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                            ${prediction.detected_sounds.map(sound => `
+                                <span style="background: #fff; padding: 5px 12px; border-radius: 15px; font-size: 0.9em; border: 1px solid #ffc107;">
+                                    ${sound}
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Add violence score (for audio analysis)
+            if (prediction.violence_score !== undefined) {
+                html += `
+                    <div style="margin-top: 15px;">
+                        <p style="color: #666;">
+                            <strong>Audio Violence Score:</strong> ${prediction.violence_score.toFixed(1)}
+                        </p>
+                    </div>
+                `;
+            }
+
+            // Add violent frames (for video analysis)
+            if (prediction.violent_frames && prediction.violent_frames.length > 0) {
+                html += `
+                    <div style="margin-top: 20px; padding: 15px; background: #f8d7da; border-radius: 8px;">
+                        <h4 style="color: #721c24; margin-bottom: 15px;">🎬 Top Violent Frames:</h4>
+                `;
+
+                prediction.violent_frames.forEach((frame, idx) => {
+                    html += `
+                        <div style="margin-bottom: 12px; padding: 12px; background: white; border-radius: 6px; border-left: 4px solid #dc3545;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <strong style="color: #dc3545;">[${frame.timestamp}] Frame #${frame.frame_number}</strong>
+                                <span style="background: #dc3545; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.85em;">
+                                    Score: ${frame.score}
+                                </span>
+                            </div>
+                            <p style="color: #666; font-size: 0.9em; margin: 5px 0;">
+                                ${frame.reasoning}
+                            </p>
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px;">
+                                ${frame.indicators.map(ind => `
+                                    <span style="background: #f8f9fa; padding: 3px 8px; border-radius: 10px; font-size: 0.8em; color: #555;">
+                                        ${ind}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+            }
+
+            // Add statistics (for video analysis)
+            if (prediction.avg_score !== undefined) {
+                html += `
+                    <div style="margin-top: 15px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
+                        <h4 style="color: #004085; margin-bottom: 10px;">📈 Video Statistics:</h4>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                            <div>
+                                <p style="color: #666; font-size: 0.9em; margin-bottom: 3px;">Average Score</p>
+                                <p style="color: #004085; font-size: 1.2em; font-weight: bold;">
+                                    ${prediction.avg_score.toFixed(1)}
+                                </p>
+                            </div>
+                            <div>
+                                <p style="color: #666; font-size: 0.9em; margin-bottom: 3px;">Maximum Score</p>
+                                <p style="color: #004085; font-size: 1.2em; font-weight: bold;">
+                                    ${prediction.max_score.toFixed(1)}
+                                </p>
+                            </div>
+                            <div>
+                                <p style="color: #666; font-size: 0.9em; margin-bottom: 3px;">Frames Analyzed</p>
+                                <p style="color: #004085; font-size: 1.2em; font-weight: bold;">
+                                    ${prediction.total_frames_analyzed || 15}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+        function displayError(message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="alert alert-error">${message}</div>`;
+            resultsDiv.classList.add('show');
+        }
+    </script>
+</body>
+</html>
