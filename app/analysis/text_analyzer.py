@@ -5,6 +5,8 @@ Analyzes text for violence/toxicity with keyword detection and ML classification
 import re
 from typing import Dict, Any, List, Optional
 
+import torch
+
 from .base import BaseAnalyzer
 from ..config import get_config
 from ..models.loader import get_model_manager
@@ -34,6 +36,7 @@ class TextAnalyzer(BaseAnalyzer):
 
     def __init__(self):
         super().__init__()
+        self._modality = 'text'
         self.config = get_config().text
         self.model_manager = get_model_manager()
 
@@ -50,6 +53,20 @@ class TextAnalyzer(BaseAnalyzer):
         if not text or len(text.strip()) == 0:
             return self._create_error_result("No text content provided")
 
+        # Use enhanced analyzer when enabled
+        config = get_config()
+        if config.model.use_enhanced_models:
+            try:
+                from .enhanced_text import EnhancedTextAnalyzer
+                enhanced = EnhancedTextAnalyzer()
+                return enhanced.analyze(text)
+            except Exception as e:
+                self.logger.warning(f"Enhanced text failed, falling back: {e}")
+
+        return self._analyze_base(text)
+
+    def _analyze_base(self, text: str) -> Dict[str, Any]:
+        """Base text analysis (original implementation)."""
         try:
             text_lower = text.lower()
 
@@ -87,6 +104,27 @@ class TextAnalyzer(BaseAnalyzer):
                 details={'error': str(e)}
             )
 
+    def analyze_temporal(self, text: str) -> Dict[str, Any]:
+        """
+        Analyze text with per-sentence violation detection.
+        Returns standard result plus violations list.
+        """
+        from .temporal import TextTemporalDetector
+
+        result = self.analyze(text)
+
+        try:
+            detector = TextTemporalDetector()
+            classifier = self.model_manager.text_classifier
+            result['violations'] = detector.detect(
+                text, classifier, self.VIOLENCE_KEYWORDS, self.config
+            )
+        except Exception as e:
+            self.logger.error(f"Temporal text analysis failed: {e}")
+            result['violations'] = []
+
+        return result
+
     def _analyze_keywords(self, text_lower: str) -> tuple[List[str], int]:
         """Analyze text for violence keywords."""
         found_keywords = []
@@ -119,10 +157,11 @@ class TextAnalyzer(BaseAnalyzer):
     def _analyze_with_ml(self, text: str) -> Dict[str, Any]:
         """Analyze text using ML model."""
         classifier = self.model_manager.text_classifier
-        result = classifier(text[:512])[0]
+        with torch.no_grad():
+            result = classifier(text[:512])[0]
         return {
             'label': result['label'].lower(),
-            'score': result['score'] * 100
+            'score': max(0, min(100, result['score'] * 100))
         }
 
     def _is_ml_violence(self, ml_result: Dict[str, Any]) -> bool:
@@ -178,7 +217,7 @@ class TextAnalyzer(BaseAnalyzer):
             final_confidence = max(combined_score + self.config.confidence_boost, self.config.min_confidence)
             return self._create_result(
                 is_violent=True,
-                confidence=min(final_confidence, self.config.max_confidence),
+                confidence=max(0, min(100, min(final_confidence, self.config.max_confidence))),
                 reasoning=' | '.join(reasoning) if reasoning else 'Toxic content detected',
                 keywords_found=found_keywords[:10],
                 ml_score=ml_result['score']

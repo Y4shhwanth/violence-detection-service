@@ -210,6 +210,39 @@ class ResultCache:
                 del self._cache[key]
             return len(expired_keys)
 
+    def get_frame_result(
+        self,
+        video_hash: str,
+        frame_idx: int
+    ) -> Optional[Dict[str, Any]]:
+        """Get a cached frame-level analysis result."""
+        key = f"frame:{video_hash}:{frame_idx}"
+        with self._lock:
+            if key not in self._cache:
+                return None
+            entry = self._cache[key]
+            if self._is_expired(entry):
+                del self._cache[key]
+                return None
+            self._cache.move_to_end(key)
+            return entry['result']
+
+    def set_frame_result(
+        self,
+        video_hash: str,
+        frame_idx: int,
+        result: Dict[str, Any]
+    ) -> None:
+        """Cache a frame-level analysis result."""
+        key = f"frame:{video_hash}:{frame_idx}"
+        with self._lock:
+            while len(self._cache) >= self.max_size:
+                self._cache.popitem(last=False)
+            self._cache[key] = {
+                'result': result,
+                'timestamp': time.time(),
+            }
+
     def stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         with self._lock:

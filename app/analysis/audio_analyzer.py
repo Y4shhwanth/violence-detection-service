@@ -11,6 +11,7 @@ from contextlib import contextmanager
 
 import numpy as np
 import librosa
+import torch
 
 from .base import BaseAnalyzer
 from ..config import get_config
@@ -24,6 +25,7 @@ class AudioAnalyzer(BaseAnalyzer):
 
     def __init__(self):
         super().__init__()
+        self._modality = 'audio'
         self.config = get_config().audio
         self.model_manager = get_model_manager()
 
@@ -38,6 +40,20 @@ class AudioAnalyzer(BaseAnalyzer):
         Returns:
             Analysis result dictionary
         """
+        # Use enhanced analyzer when enabled
+        config = get_config()
+        if config.model.use_enhanced_models:
+            try:
+                from .enhanced_audio import EnhancedAudioAnalyzer
+                enhanced = EnhancedAudioAnalyzer()
+                return enhanced.analyze(video_path)
+            except Exception as e:
+                self.logger.warning(f"Enhanced audio failed, falling back: {e}")
+
+        return self._analyze_base(video_path)
+
+    def _analyze_base(self, video_path: str) -> Dict[str, Any]:
+        """Base audio analysis (original implementation)."""
         audio_classifier = self.model_manager.audio_classifier
         if not audio_classifier:
             return self._create_error_result('Audio model not loaded')
@@ -61,8 +77,9 @@ class AudioAnalyzer(BaseAnalyzer):
                     duration=self.config.audio_duration_seconds
                 )
 
-                # Analyze with ML model
-                ml_results = audio_classifier(audio, sampling_rate=sr, top_k=10)
+                # Analyze with ML model (deterministic inference)
+                with torch.no_grad():
+                    ml_results = audio_classifier(audio, sampling_rate=sr, top_k=10)
 
                 # Check for violence-related sounds
                 violence_score, detected_sounds, reasoning_parts = self._analyze_sounds(ml_results)
@@ -207,6 +224,39 @@ class AudioAnalyzer(BaseAnalyzer):
 
         return feature_score, reasoning_parts
 
+    def analyze_temporal(self, video_path: str) -> Dict[str, Any]:
+        """
+        Analyze audio with temporal violation detection (windowed classification).
+        Returns standard result plus violations list with timestamps.
+        """
+        from .temporal import AudioTemporalDetector
+
+        result = self.analyze(video_path)
+
+        try:
+            with self._extract_audio_ffmpeg(video_path) as audio_path:
+                if audio_path is None:
+                    result['violations'] = []
+                    return result
+
+                audio, sr = librosa.load(
+                    audio_path,
+                    sr=self.config.sample_rate,
+                    duration=self.config.audio_duration_seconds
+                )
+
+                audio_classifier = self.model_manager.audio_classifier
+                detector = AudioTemporalDetector()
+                result['violations'] = detector.detect(
+                    audio, sr, audio_classifier, self.config.sound_weights
+                )
+
+        except Exception as e:
+            self.logger.error(f"Temporal audio analysis failed: {e}")
+            result['violations'] = []
+
+        return result
+
     def _build_result(
         self,
         violence_score: float,
@@ -225,16 +275,16 @@ class AudioAnalyzer(BaseAnalyzer):
 
             return self._create_result(
                 is_violent=True,
-                confidence=max(final_confidence, self.config.min_confidence),
+                confidence=max(0, min(100, max(final_confidence, self.config.min_confidence))),
                 reasoning=reasoning,
                 detected_sounds=detected_sounds[:5],
-                violence_score=float(violence_score)
+                violence_score=float(max(0, min(100, violence_score)))
             )
         else:
             return self._create_result(
                 is_violent=False,
-                confidence=max(100 - violence_score, self.config.min_confidence),
+                confidence=max(0, min(100, max(100 - violence_score, self.config.min_confidence))),
                 reasoning='No significant violence-related sounds detected',
                 detected_sounds=[],
-                violence_score=float(violence_score)
+                violence_score=float(max(0, min(100, violence_score)))
             )

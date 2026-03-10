@@ -54,6 +54,7 @@ class BaseAnalyzer(ABC):
             'class': 'Violence' if is_violent else 'Non-Violence',
             'confidence': float(confidence),
             'reasoning': reasoning,
+            'modality': getattr(self, '_modality', 'unknown'),
         }
         result.update(kwargs)
         return result

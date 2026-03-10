@@ -34,6 +34,10 @@ class VideoAnalysisConfig:
     ml_threshold: int = 40
     frame_violence_threshold: int = 30
 
+    # Violence detection thresholds
+    violence_threshold: int = 60      # combined_score threshold for is_violent
+    ml_min_score: int = 20            # minimum ML score to count as signal
+
     # Heuristic thresholds
     red_intensity_high: int = 130
     red_dominance_high: float = 0.25
@@ -90,7 +94,7 @@ class SecurityConfig:
     # CORS settings
     cors_origins: List[str] = field(default_factory=lambda: [
         origin.strip()
-        for origin in os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5001').split(',')
+        for origin in os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5001,http://localhost:5173').split(',')
         if origin.strip()
     ])
     cors_allow_all: bool = field(default_factory=lambda: os.getenv(
@@ -187,6 +191,88 @@ class ModelConfig:
         os.getenv('MODEL_CACHE_TTL', '0')
     ))
 
+    # Enhanced models (Phase 2)
+    use_enhanced_models: bool = field(default_factory=lambda: os.getenv(
+        'USE_ENHANCED_MODELS', 'False'
+    ).lower() == 'true')
+    videomae_model: str = field(default_factory=lambda: os.getenv(
+        'VIDEOMAE_MODEL', 'MCG-NJU/videomae-base-finetuned-kinetics'
+    ))
+    emotion_model: str = field(default_factory=lambda: os.getenv(
+        'EMOTION_MODEL', 'ehcalabres/wav2vec2-lg-xlsr-en-speech-emotion-recognition'
+    ))
+    offensive_model: str = field(default_factory=lambda: os.getenv(
+        'OFFENSIVE_MODEL', 'cardiffnlp/twitter-roberta-base-offensive'
+    ))
+    context_model: str = field(default_factory=lambda: os.getenv(
+        'CONTEXT_MODEL', 'facebook/bart-large-mnli'
+    ))
+
+
+@dataclass
+class FusionConfig:
+    """Configuration for weighted fusion."""
+    video_weight: float = 0.4
+    audio_weight: float = 0.3
+    text_weight: float = 0.3
+    cross_modal_boost: float = 8.0
+    cross_modal_penalty: float = 10.0
+    embedding_similarity_threshold: float = 0.65
+    min_modalities_for_violence: int = 2
+    single_modality_threshold: float = 90.0
+
+
+@dataclass
+class DatabaseConfig:
+    """Database configuration."""
+    db_url: Optional[str] = field(default_factory=lambda: os.getenv(
+        'DATABASE_URL', None
+    ))  # None = auto SQLite
+
+
+@dataclass
+class JobQueueConfig:
+    """Job queue configuration."""
+    redis_url: Optional[str] = field(default_factory=lambda: os.getenv(
+        'REDIS_URL', None
+    ))
+    max_workers: int = field(default_factory=lambda: int(
+        os.getenv('JOB_MAX_WORKERS', '2')
+    ))
+    job_ttl: int = field(default_factory=lambda: int(
+        os.getenv('JOB_TTL', '3600')
+    ))
+
+
+@dataclass
+class RAGConfig:
+    """RAG Policy Engine configuration."""
+    embedding_model: str = field(default_factory=lambda: os.getenv(
+        'RAG_EMBEDDING_MODEL', 'all-MiniLM-L6-v2'
+    ))
+    index_path: str = field(default_factory=lambda: os.getenv(
+        'RAG_INDEX_PATH', 'data/faiss_index'
+    ))
+    use_rag: bool = field(default_factory=lambda: os.getenv(
+        'USE_RAG_POLICY', 'False'
+    ).lower() == 'true')
+
+
+@dataclass
+class LiveDetectionConfig:
+    """Live detection / real-time monitoring configuration."""
+    frame_skip: int = field(default_factory=lambda: int(
+        os.getenv('LIVE_FRAME_SKIP', '5')
+    ))  # Analyze every Nth frame
+    alert_threshold: float = field(default_factory=lambda: float(
+        os.getenv('LIVE_ALERT_THRESHOLD', '70.0')
+    ))  # Confidence threshold for alerts
+    max_fps: int = field(default_factory=lambda: int(
+        os.getenv('LIVE_MAX_FPS', '30')
+    ))
+    frame_width: int = 640
+    frame_height: int = 480
+
 
 @dataclass
 class LoggingConfig:
@@ -219,7 +305,12 @@ class Config:
     file: FileConfig = field(default_factory=FileConfig)
     cache: CacheConfig = field(default_factory=CacheConfig)
     model: ModelConfig = field(default_factory=ModelConfig)
+    fusion: FusionConfig = field(default_factory=FusionConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
+    database: DatabaseConfig = field(default_factory=DatabaseConfig)
+    job_queue: JobQueueConfig = field(default_factory=JobQueueConfig)
+    rag: RAGConfig = field(default_factory=RAGConfig)
+    live_detection: LiveDetectionConfig = field(default_factory=LiveDetectionConfig)
 
 
 # Global configuration instance

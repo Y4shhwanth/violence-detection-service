@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Violence Detection AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='ai_style.css') }}">
+</head>
+<body>
+    <!-- Header Stats -->
+    <div class="header-card">
+        <div class="icon-container">
+            <div class="shield-icon">🛡️</div>
+        </div>
+        <div class="header-content">
+            <h1 class="main-title">Violence Detection AI</h1>
+            <p class="subtitle">Advanced Multi-Modal Content Analysis</p>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">PROCESSED</div>
+                <div class="stat-value">
+                    <span class="icon">🔄</span>
+                    <span id="processed-count">1,247</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">ACCURACY</div>
+                <div class="stat-value">
+                    <span class="icon">⚡</span>
+                    <span>98.5%</span>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div class="status-indicator">
+                    <span class="status-dot"></span>
+                    <span>Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mode Tabs -->
+    <div class="mode-tabs">
+        <button class="tab-btn active" data-mode="multimodal">
+            <span class="icon">📊</span> Multimodal
+        </button>
+        <button class="tab-btn" data-mode="video">
+            <span class="icon">🎥</span> Video Only
+        </button>
+        <button class="tab-btn" data-mode="text">
+            <span class="icon">📝</span> Text Only
+        </button>
+        <button class="tab-btn" data-mode="batch">
+            <span class="icon">📦</span> Batch
+        </button>
+    </div>
+
+    <!-- Upload Sections -->
+    <div class="upload-container">
+        <div class="upload-card" id="video-upload">
+            <div class="upload-icon-circle">
+                <span class="upload-icon">🎬</span>
+            </div>
+            <h3>Upload Video</h3>
+            <p>MP4, AVI, MOV up to 50MB</p>
+            <input type="file" id="video-file" accept="video/*" hidden>
+            <button class="upload-btn" onclick="document.getElementById('video-file').click()">
+                Choose File
+            </button>
+            <div class="file-name" id="video-name"></div>
+        </div>
+
+        <div class="upload-card" id="audio-upload">
+            <div class="upload-icon-circle">
+                <span class="upload-icon">🎵</span>
+            </div>
+            <h3>Upload Audio (Optional)</h3>
+            <p>MP3, WAV for audio analysis</p>
+            <input type="file" id="audio-file" accept="audio/*" hidden>
+            <button class="upload-btn secondary" onclick="document.getElementById('audio-file').click()">
+                Choose File
+            </button>
+            <div class="file-name" id="audio-name"></div>
+        </div>
+    </div>
+
+    <!-- Text Input -->
+    <div class="text-section" id="text-section">
+        <label class="text-label">Text Content (Optional)</label>
+        <textarea id="text-input" placeholder="Enter text content for analysis..."></textarea>
+    </div>
+
+    <!-- Analysis Settings -->
+    <div class="settings-card">
+        <div class="settings-header">
+            <span class="settings-icon">⚙️</span>
+            <h3>Analysis Settings</h3>
+        </div>
+        <div class="settings-grid">
+            <div class="setting-item">
+                <label>Sensitivity</label>
+                <select id="sensitivity">
+                    <option value="low">Low</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Analysis Mode</label>
+                <select id="analysis-mode">
+                    <option value="full" selected>Full Analysis</option>
+                    <option value="quick">Quick Scan</option>
+                    <option value="deep">Deep Analysis</option>
+                </select>
+            </div>
+            <div class="setting-item">
+                <label>Output Format</label>
+                <select id="output-format">
+                    <option value="detailed" selected>Detailed Report</option>
+                    <option value="summary">Summary</option>
+                    <option value="json">JSON</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyze Button -->
+    <button class="analyze-btn" id="analyze-btn" onclick="analyzeContent()">
+        <span class="btn-text">Analyze Content</span>
+        <span class="btn-icon">→</span>
+    </button>
+
+    <!-- Loading Animation -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Analyzing content...</p>
+            <p class="loading-subtext">This may take a few moments</p>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="results-section" id="results-section" style="display: none;"></div>
+
+    <script src="{{ url_for('static', filename='ai_script.js') }}"></script>
+</body>
+</html>

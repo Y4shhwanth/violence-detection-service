@@ -102,8 +102,7 @@ class FileValidator:
         if mimetype not in self.config.allowed_video_mimetypes:
             # Log warning but don't reject - magic bytes are more reliable
             logger.warning(
-                f"Unexpected MIME type: {mimetype}",
-                filename=file.filename
+                f"Unexpected MIME type: {mimetype} for file: {file.filename}"
             )
 
     def _validate_magic_bytes(self, file: FileStorage) -> None:

@@ -29,11 +29,15 @@ load_dotenv()
 from app import create_app
 from app.config import get_config
 from app.utils.logging import get_logger
+from app.utils.deterministic import set_deterministic
 
 
 def main():
     """Run the Flask development server."""
     logger = get_logger(__name__)
+
+    # Ensure deterministic inference from the start
+    set_deterministic()
 
     # Create application
     app = create_app()
@@ -56,16 +60,29 @@ def main():
         from app.models.loader import get_model_manager
         manager = get_model_manager()
         manager.load_all_models()
-        logger.info("Models loaded successfully")
+        manager.warm_up()
+        logger.info("Models loaded and warmed up successfully")
 
-    # Run Flask development server
-    # For production, use: gunicorn -w 4 -b 0.0.0.0:5001 "app:create_app()"
-    app.run(
-        debug=config.security.debug,
-        host='0.0.0.0',
-        port=int(os.getenv('PORT', 5001)),
-        threaded=True
-    )
+    # Run with SocketIO if available (enables WebSocket for live detection)
+    port = int(os.getenv('PORT', 5001))
+    from app import socketio
+    if socketio is not None:
+        logger.info("Starting with Flask-SocketIO (WebSocket enabled)")
+        socketio.run(
+            app,
+            debug=config.security.debug,
+            host='0.0.0.0',
+            port=port,
+            allow_unsafe_werkzeug=True,
+        )
+    else:
+        # Fallback to standard Flask server
+        app.run(
+            debug=config.security.debug,
+            host='0.0.0.0',
+            port=port,
+            threaded=True,
+        )
 
 
 if __name__ == '__main__':

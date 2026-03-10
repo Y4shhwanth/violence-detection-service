@@ -158,7 +158,7 @@ def log_performance(logger_name: str = 'performance'):
                         'function': func.__name__,
                         'duration_ms': round(duration * 1000, 2),
                         'success': False,
-                        'error': str(e),
+                        'error_message': str(e),
                     }
                 )
                 raise

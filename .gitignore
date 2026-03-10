@@ -68,3 +68,4 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
+agent/node_modules/
