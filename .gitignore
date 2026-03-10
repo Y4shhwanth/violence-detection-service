@@ -47,6 +47,9 @@ data/
 datasets/
 *.csv
 *.json
+!frontend/vercel.json
+!frontend/package.json
+!frontend/package-lock.json
 
 # Uploads
 static/uploads/*
