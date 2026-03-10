@@ -1,53 +1,42 @@
 # Deep Learning Frameworks
-tensorflow==2.14.0
-torch==2.1.0
-torchvision==0.16.0
+tensorflow>=2.14.0,<2.16
+torch>=2.1.0,<2.3
+torchvision>=0.16.0,<0.18
 
 # Computer Vision
-opencv-python==4.8.1.78
-opencv-contrib-python==4.8.1.78
+opencv-python-headless>=4.8.0
+# opencv-contrib-python not needed on server
 
 # Audio Processing
-librosa==0.10.1
-soundfile==0.12.1
-scipy==1.11.4
-moviepy==1.0.3
+librosa>=0.10.1
+soundfile>=0.12.1
+scipy>=1.11.0
+moviepy>=1.0.3
 
 # Natural Language Processing
-transformers==4.35.2
-tokenizers==0.15.0
+transformers>=4.35.0
+tokenizers>=0.15.0
 
 # Web Framework
-flask==3.0.0
-flask-cors==4.0.0
-gunicorn==21.2.0
+flask>=3.0.0
+flask-cors>=4.0.0
+gunicorn>=21.2.0
 
 # Utilities
-numpy==1.24.3
-pandas==2.1.3
-matplotlib==3.8.2
-seaborn==0.13.0
-pillow==10.1.0
-scikit-learn==1.3.2
+numpy>=1.24.0,<2.0
+pandas>=2.1.0
+matplotlib>=3.8.0
+seaborn>=0.13.0
+pillow>=10.1.0
+scikit-learn>=1.3.0
 
 # Visualization
-grad-cam==1.4.8
+grad-cam>=1.4.8
 
 # Environment & Configuration
-python-dotenv==1.0.0
-tqdm==4.66.1
-requests==2.31.0
-
-# Security
-# Note: These are recommended for production deployments
-# bandit>=1.7.5  # Security linting (dev dependency)
-# safety>=2.3.5  # Dependency vulnerability checking (dev dependency)
-
-# Testing
-pytest>=7.4.0
-pytest-cov>=4.1.0
-pytest-flask>=1.2.0
-pytest-mock>=3.12.0
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+requests>=2.31.0
 
 # Database & Queue
 sqlalchemy>=2.0
@@ -63,9 +52,3 @@ fpdf2>=2.7
 # Real-time WebSocket
 flask-socketio>=5.3
 python-socketio>=5.10
-
-# Development
-black>=23.0.0
-isort>=5.12.0
-flake8>=6.1.0
-mypy>=1.7.0
