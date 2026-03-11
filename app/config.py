@@ -94,11 +94,11 @@ class SecurityConfig:
     # CORS settings
     cors_origins: List[str] = field(default_factory=lambda: [
         origin.strip()
-        for origin in os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5001,http://localhost:5173').split(',')
+        for origin in os.getenv('CORS_ORIGINS', 'http://localhost:3000,http://localhost:5001,http://localhost:5173,https://frontend-nine-phi-91.vercel.app').split(',')
         if origin.strip()
     ])
     cors_allow_all: bool = field(default_factory=lambda: os.getenv(
-        'CORS_ALLOW_ALL', 'False'
+        'CORS_ALLOW_ALL', 'True'
     ).lower() == 'true')
 
     # Rate limiting
