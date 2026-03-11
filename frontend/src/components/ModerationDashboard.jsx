@@ -1,37 +1,16 @@
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import GlassCard from './ui/GlassCard'
 import AnimatedCounter from './ui/AnimatedCounter'
-import { SkeletonCard, SkeletonChart } from './ui/Skeleton'
 import { StyledTooltip, gridProps, axisProps } from '../design/chartHelpers'
 import { animation } from '../design/tokens'
 
 const PIE_COLORS = ['#ef4444', '#f59e0b', '#22c55e']
 
-export default function ModerationDashboard({ getStats }) {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const data = getStats(30)
-    setStats(data)
-    setLoading(false)
-  }, [getStats])
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[0,1,2,3].map(i => <SkeletonCard key={i} />)}
-        </div>
-        <div className="grid md:grid-cols-2 gap-6">
-          <SkeletonChart />
-          <SkeletonChart />
-        </div>
-      </div>
-    )
-  }
+export default function ModerationDashboard({ getStats, historyCount }) {
+  // Recompute stats whenever historyCount changes (new analysis added)
+  const stats = useMemo(() => getStats(30), [getStats, historyCount])
 
   if (!stats?.success) {
     return (

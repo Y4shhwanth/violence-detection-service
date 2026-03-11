@@ -98,7 +98,7 @@ class SecurityConfig:
         if origin.strip()
     ])
     cors_allow_all: bool = field(default_factory=lambda: os.getenv(
-        'CORS_ALLOW_ALL', 'True'
+        'CORS_ALLOW_ALL', 'False'
     ).lower() == 'true')
 
     # Rate limiting

@@ -25,7 +25,7 @@ import { useAnalysisHistory } from './hooks/useAnalysisHistory'
 export default function App() {
   const [view, setView] = useState('analyze')
   const { results, loading, error, uploadProgress, analyze, reset } = useAnalysis()
-  const { addResult, getStats } = useAnalysisHistory()
+  const { history, addResult, getStats } = useAnalysisHistory()
 
   // Save results to history when analysis completes
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function App() {
               </h2>
             }
           >
-            <ModerationDashboard getStats={getStats} />
+            <ModerationDashboard getStats={getStats} historyCount={history.length} />
           </ContainerScroll>
         )}
 

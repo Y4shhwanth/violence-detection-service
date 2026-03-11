@@ -1,38 +1,54 @@
 import { useState, useCallback } from 'react'
 
 const STORAGE_KEY = 'analysis_history'
+const MAX_ENTRIES = 500
 
 function loadHistory() {
   try {
     return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  } catch {
+  } catch (_) {
     return []
   }
 }
 
 function saveHistory(history) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(history))
+  } catch (_) {
+    // QuotaExceededError — trim aggressively and retry
+    const trimmed = history.slice(0, Math.floor(MAX_ENTRIES / 2))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed))
+  }
 }
 
 export function useAnalysisHistory() {
   const [history, setHistory] = useState(loadHistory)
 
   const addResult = useCallback((results) => {
-    const entry = {
-      id: results.job_id || Date.now().toString(),
-      date: new Date().toISOString(),
-      decision: results.final_decision || (results.fused_prediction?.class === 'Violence' ? 'Violation' : 'Verified'),
-      confidence: results.confidence || results.fused_prediction?.confidence || 0,
-      modalities: [
-        results.video_prediction && 'video',
-        results.audio_prediction && 'audio',
-        results.text_prediction && 'text',
-      ].filter(Boolean),
-      processing_time: results.processing_time_ms || 0,
-    }
-    const updated = [entry, ...loadHistory()]
-    saveHistory(updated)
-    setHistory(updated)
+    const entryId = results.job_id || Date.now().toString()
+
+    setHistory(prev => {
+      // Deduplicate — skip if this id already exists (Strict Mode guard)
+      if (prev.some(e => e.id === entryId)) return prev
+
+      const entry = {
+        id: entryId,
+        date: new Date().toISOString(),
+        decision: results.final_decision || (results.fused_prediction?.class === 'Violence' ? 'Violation' : 'Verified'),
+        confidence: results.confidence || results.fused_prediction?.confidence || 0,
+        modalities: [
+          results.video_prediction && 'video',
+          results.audio_prediction && 'audio',
+          results.text_prediction && 'text',
+        ].filter(Boolean),
+        processing_time: results.processing_time_ms || 0,
+      }
+
+      // Cap at MAX_ENTRIES
+      const updated = [entry, ...prev].slice(0, MAX_ENTRIES)
+      saveHistory(updated)
+      return updated
+    })
   }, [])
 
   const getStats = useCallback((days = 30) => {
