@@ -1,33 +1,23 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { fetchDashboardStats } from '../api/asyncClient'
 import GlassCard from './ui/GlassCard'
 import AnimatedCounter from './ui/AnimatedCounter'
 import { SkeletonCard, SkeletonChart } from './ui/Skeleton'
 import { StyledTooltip, gridProps, axisProps } from '../design/chartHelpers'
-import { animation, colors } from '../design/tokens'
+import { animation } from '../design/tokens'
 
 const PIE_COLORS = ['#ef4444', '#f59e0b', '#22c55e']
 
-export default function ModerationDashboard() {
+export default function ModerationDashboard({ getStats }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
-  useEffect(() => { loadStats() }, [])
-
-  const loadStats = async () => {
-    try {
-      setLoading(true)
-      const data = await fetchDashboardStats(30)
-      setStats(data)
-    } catch (err) {
-      setError('Failed to load dashboard stats')
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    const data = getStats(30)
+    setStats(data)
+    setLoading(false)
+  }, [getStats])
 
   if (loading) {
     return (
@@ -43,7 +33,7 @@ export default function ModerationDashboard() {
     )
   }
 
-  if (error || !stats?.success) {
+  if (!stats?.success) {
     return (
       <GlassCard className="text-center py-12">
         <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-white/[0.04] flex items-center justify-center">
@@ -51,8 +41,7 @@ export default function ModerationDashboard() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
         </div>
-        <p className="text-sm text-white/40">{error || 'No data available yet. Run some analyses first.'}</p>
-        <button onClick={loadStats} className="mt-3 text-xs text-red-400 hover:text-red-300 transition-colors">Retry</button>
+        <p className="text-sm text-white/40">No data available yet. Run some analyses first.</p>
       </GlassCard>
     )
   }

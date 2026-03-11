@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import GlassCard from './ui/GlassCard'
 import { animation } from '../design/tokens'
 
-export default function UploadSection({ onAnalyze, loading, mode = 'quick' }) {
+export default function UploadSection({ onAnalyze, loading }) {
   const [videoFile, setVideoFile] = useState(null)
   const [videoPreview, setVideoPreview] = useState(null)
   const [textInput, setTextInput] = useState('')
@@ -153,7 +153,7 @@ export default function UploadSection({ onAnalyze, loading, mode = 'quick' }) {
             <div className="absolute inset-0 shimmer" />
           )}
           <span className="relative">
-            {loading ? 'Analyzing...' : mode === 'advanced' ? 'Advanced Analysis' : 'Analyze Content'}
+            {loading ? 'Analyzing...' : 'Analyze Content'}
           </span>
         </motion.button>
 
