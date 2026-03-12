@@ -24,4 +24,18 @@ export async function checkHealth() {
   return response.data
 }
 
+// Keep-alive ping — prevents Render free tier from sleeping (every 14 min)
+const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000
+
+function startKeepAlive() {
+  // Initial ping to wake up backend on page load
+  client.get('/health').catch(() => {})
+
+  setInterval(() => {
+    client.get('/health').catch(() => {})
+  }, KEEP_ALIVE_INTERVAL)
+}
+
+startKeepAlive()
+
 export default client
