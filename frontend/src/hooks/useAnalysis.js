@@ -26,7 +26,12 @@ export function useAnalysis() {
       setResults(data)
       return data
     } catch (err) {
-      const message = err.response?.data?.message || err.message || 'Analysis failed'
+      let message = err.response?.data?.message || err.message || 'Analysis failed'
+      if (err.code === 'ECONNABORTED' || message.includes('timeout')) {
+        message = 'Server is waking up (free tier). Please try again in 30 seconds.'
+      } else if (err.message?.includes('Network Error')) {
+        message = 'Cannot reach server. It may be starting up — please retry shortly.'
+      }
       setError(message)
       throw err
     } finally {
