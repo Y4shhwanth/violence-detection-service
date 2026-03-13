@@ -130,8 +130,7 @@ def _store_predict_result(results, video_path, text_input):
     """Store a /predict result in the database (mirrors AnalysisService._store_result)."""
     import datetime
 
-    job_id = str(uuid.uuid4())
-    results['job_id'] = job_id
+    job_id = results['job_id']
 
     with get_db_session() as session:
         record = AnalysisResult(
@@ -351,6 +350,9 @@ def predict():
 
         # Processing time
         results['processing_time_ms'] = int((_time.time() - _start_time) * 1000)
+
+        # Generate job_id (always, regardless of DB)
+        results['job_id'] = str(uuid.uuid4())
 
         # Store result in database (non-fatal)
         try:
