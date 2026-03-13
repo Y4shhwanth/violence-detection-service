@@ -79,9 +79,14 @@ class TextAnalyzer(BaseAnalyzer):
                 keyword_score += self.config.threat_pattern_score * len(pattern_matches)
                 found_keywords.extend([f"direct threat ({p})" for p in pattern_matches])
 
-            # ML analysis
-            ml_result = self._analyze_with_ml(text)
-            ml_detected_violence = self._is_ml_violence(ml_result)
+            # ML analysis (non-fatal — falls back to keyword-only on low-memory hosts)
+            ml_result = {'label': 'unknown', 'score': 0}
+            ml_detected_violence = False
+            try:
+                ml_result = self._analyze_with_ml(text)
+                ml_detected_violence = self._is_ml_violence(ml_result)
+            except Exception as e:
+                self.logger.warning(f"ML text classification unavailable, using keywords only: {e}")
 
             # Combine scores
             combined_score = self._calculate_combined_score(
