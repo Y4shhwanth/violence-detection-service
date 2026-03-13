@@ -27,8 +27,6 @@ from ..utils.errors import (
 from ..utils.logging import get_logger
 from ..utils.cache import get_cache, compute_file_hash
 from ..config import get_config
-from ..database.session import get_db_session
-from ..database.models import AnalysisResult, ModerationStats
 
 logger = get_logger(__name__)
 
@@ -129,6 +127,8 @@ def health_check():
 def _store_predict_result(results, video_path, text_input):
     """Store a /predict result in the database (mirrors AnalysisService._store_result)."""
     import datetime
+    from ..database.session import get_db_session
+    from ..database.models import AnalysisResult, ModerationStats
 
     job_id = results['job_id']
 
