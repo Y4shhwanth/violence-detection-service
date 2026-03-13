@@ -10,6 +10,10 @@ export default function Layout({ children }) {
   useEffect(() => {
     let mounted = true
     const check = async () => {
+      if (!navigator.onLine) {
+        if (mounted) setHealthStatus('offline')
+        return
+      }
       try {
         await checkHealth()
         if (mounted) setHealthStatus('healthy')
@@ -19,7 +23,16 @@ export default function Layout({ children }) {
     }
     check()
     const interval = setInterval(check, 60000)
-    return () => { mounted = false; clearInterval(interval) }
+    const goOnline = () => check()
+    const goOffline = () => { if (mounted) setHealthStatus('offline') }
+    window.addEventListener('online', goOnline)
+    window.addEventListener('offline', goOffline)
+    return () => {
+      mounted = false
+      clearInterval(interval)
+      window.removeEventListener('online', goOnline)
+      window.removeEventListener('offline', goOffline)
+    }
   }, [])
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050508' }}>

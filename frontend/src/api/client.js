@@ -28,12 +28,11 @@ export async function checkHealth() {
 const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000
 
 function startKeepAlive() {
-  // Initial ping to wake up backend on page load
-  client.get('/health').catch(() => {})
-
-  setInterval(() => {
-    client.get('/health').catch(() => {})
-  }, KEEP_ALIVE_INTERVAL)
+  const ping = () => {
+    if (navigator.onLine) client.get('/health').catch(() => {})
+  }
+  ping()
+  setInterval(ping, KEEP_ALIVE_INTERVAL)
 }
 
 startKeepAlive()
