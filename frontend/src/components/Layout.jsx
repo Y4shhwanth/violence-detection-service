@@ -1,8 +1,26 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import ShaderBackground from './ui/ShaderBackground'
 import SpecialText from './ui/SpecialText'
+import { checkHealth } from '../api/client'
 
 export default function Layout({ children }) {
+  const [healthStatus, setHealthStatus] = useState('waking') // 'healthy' | 'waking' | 'offline'
+
+  useEffect(() => {
+    let mounted = true
+    const check = async () => {
+      try {
+        await checkHealth()
+        if (mounted) setHealthStatus('healthy')
+      } catch (_) {
+        if (mounted) setHealthStatus(prev => prev === 'healthy' ? 'offline' : prev)
+      }
+    }
+    check()
+    const interval = setInterval(check, 60000)
+    return () => { mounted = false; clearInterval(interval) }
+  }, [])
   return (
     <div className="min-h-screen text-white relative" style={{ background: '#050508' }}>
       {/* WebGL shader background */}
@@ -44,9 +62,23 @@ export default function Layout({ children }) {
             transition={{ delay: 0.3 }}
             className="hidden sm:flex items-center gap-3"
           >
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-green-500/20 bg-green-500/[0.06]">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-lg shadow-green-400/50 animate-pulse" />
-              <span className="text-[11px] text-green-400/80 font-medium">Online</span>
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${
+              healthStatus === 'healthy' ? 'border-green-500/20 bg-green-500/[0.06]'
+                : healthStatus === 'waking' ? 'border-yellow-500/20 bg-yellow-500/[0.06]'
+                : 'border-red-500/20 bg-red-500/[0.06]'
+            }`}>
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                healthStatus === 'healthy' ? 'bg-green-400 shadow-lg shadow-green-400/50'
+                  : healthStatus === 'waking' ? 'bg-yellow-400 shadow-lg shadow-yellow-400/50'
+                  : 'bg-red-400 shadow-lg shadow-red-400/50'
+              }`} />
+              <span className={`text-[11px] font-medium ${
+                healthStatus === 'healthy' ? 'text-green-400/80'
+                  : healthStatus === 'waking' ? 'text-yellow-400/80'
+                  : 'text-red-400/80'
+              }`}>
+                {healthStatus === 'healthy' ? 'Online' : healthStatus === 'waking' ? 'Waking Up' : 'Offline'}
+              </span>
             </div>
           </motion.div>
         </div>

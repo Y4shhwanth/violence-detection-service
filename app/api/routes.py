@@ -27,6 +27,8 @@ from ..utils.errors import (
 from ..utils.logging import get_logger
 from ..utils.cache import get_cache, compute_file_hash
 from ..config import get_config
+from ..database.session import get_db_session
+from ..database.models import AnalysisResult, ModerationStats
 
 logger = get_logger(__name__)
 
@@ -122,6 +124,59 @@ def health_check():
         'models': status,
         'cache': get_cache().stats(),
     })
+
+
+def _store_predict_result(results, video_path, text_input):
+    """Store a /predict result in the database (mirrors AnalysisService._store_result)."""
+    import datetime
+
+    job_id = str(uuid.uuid4())
+    results['job_id'] = job_id
+
+    with get_db_session() as session:
+        record = AnalysisResult(
+            id=str(uuid.uuid4()),
+            job_id=job_id,
+            has_video=video_path is not None,
+            has_text=bool(text_input),
+            video_filename=os.path.basename(video_path) if video_path else None,
+            text_length=len(text_input) if text_input else 0,
+            final_decision=results.get('final_decision', 'Unknown'),
+            confidence=results.get('confidence', 0),
+            decision_tier=(results.get('fused_prediction') or {}).get('decision_tier'),
+            video_confidence=(results.get('video_prediction') or {}).get('confidence'),
+            audio_confidence=(results.get('audio_prediction') or {}).get('confidence'),
+            text_confidence=(results.get('text_prediction') or {}).get('confidence'),
+            severity_score=(results.get('severity') or {}).get('severity_score'),
+            severity_label=(results.get('severity') or {}).get('severity_label'),
+            result_json=results,
+            processing_time_ms=results.get('processing_time_ms'),
+        )
+        session.add(record)
+
+        today = datetime.date.today().isoformat()
+        stats = session.query(ModerationStats).filter_by(date=today).first()
+        if not stats:
+            stats = ModerationStats(date=today)
+            session.add(stats)
+
+        stats.total_analyses += 1
+        decision = results.get('final_decision', '')
+        if decision == 'Violation':
+            stats.violations += 1
+        elif decision == 'Review Required':
+            stats.reviews += 1
+        else:
+            stats.verified += 1
+
+        n = stats.total_analyses
+        stats.avg_confidence = (
+            (stats.avg_confidence * (n - 1) + results.get('confidence', 0)) / n
+        )
+        processing_time_ms = results.get('processing_time_ms', 0)
+        stats.avg_processing_time_ms = (
+            (stats.avg_processing_time_ms * (n - 1) + processing_time_ms) / n
+        )
 
 
 @api_bp.route('/predict', methods=['POST'])
@@ -296,6 +351,12 @@ def predict():
 
         # Processing time
         results['processing_time_ms'] = int((_time.time() - _start_time) * 1000)
+
+        # Store result in database (non-fatal)
+        try:
+            _store_predict_result(results, video_path, text_input)
+        except Exception as e:
+            logger.warning(f"Failed to store predict result in DB: {e}")
 
         # Debug block: include intermediate scores when debug=true
         debug_flag = request.form.get('debug', request.args.get('debug', '')).lower()

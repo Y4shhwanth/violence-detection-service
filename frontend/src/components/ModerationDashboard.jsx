@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import GlassCard from './ui/GlassCard'
@@ -9,8 +9,29 @@ import { animation } from '../design/tokens'
 const PIE_COLORS = ['#ef4444', '#f59e0b', '#22c55e']
 
 export default function ModerationDashboard({ getStats, historyCount }) {
-  // Recompute stats whenever historyCount changes (new analysis added)
-  const stats = useMemo(() => getStats(30), [getStats, historyCount])
+  const [apiStats, setApiStats] = useState(null)
+
+  // Try fetching from backend API on mount and when historyCount changes
+  useEffect(() => {
+    let cancelled = false
+    async function fetchApi() {
+      try {
+        const { fetchDashboardStats } = await import('../api/asyncClient')
+        const data = await fetchDashboardStats(30)
+        if (!cancelled && data?.success) setApiStats(data)
+      } catch (_) {
+        // API unavailable — will fall back to localStorage
+      }
+    }
+    fetchApi()
+    return () => { cancelled = true }
+  }, [historyCount])
+
+  // Recompute localStorage stats whenever historyCount changes
+  const localStats = useMemo(() => getStats(30), [getStats, historyCount])
+
+  // Prefer API stats (richer: includes avg_confidence, avg_processing_time), fall back to localStorage
+  const stats = apiStats || localStats
 
   if (!stats?.success) {
     return (

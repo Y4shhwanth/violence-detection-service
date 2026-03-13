@@ -14,6 +14,11 @@ import FrameEvidenceGallery from './components/FrameEvidenceGallery'
 import ModerationDashboard from './components/ModerationDashboard'
 import RiskGauge from './components/RiskGauge'
 import AIChatAssistant from './components/AIChatAssistant'
+import FeedbackPanel from './components/FeedbackPanel'
+import ExportButton from './components/ExportButton'
+import LiveMonitoring from './components/LiveMonitoring'
+import PipelineVisualization from './components/PipelineVisualization'
+import AnalysisHistory from './components/AnalysisHistory'
 import GlassCard from './components/ui/GlassCard'
 import { Card, CardContent } from './components/ui/Card'
 import { Spotlight } from './components/ui/Spotlight'
@@ -24,7 +29,7 @@ import { useAnalysisHistory } from './hooks/useAnalysisHistory'
 
 export default function App() {
   const [view, setView] = useState('analyze')
-  const { results, loading, error, uploadProgress, analyze, reset } = useAnalysis()
+  const { results, loading, error, uploadProgress, analyze, reset, isAsync, currentStep, asyncProgress } = useAnalysis()
   const { history, addResult, getStats } = useAnalysisHistory()
 
   // Save results to history when analysis completes
@@ -42,6 +47,8 @@ export default function App() {
           {[
             { id: 'analyze', label: 'Analyze', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
             { id: 'dashboard', label: 'Dashboard', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
+            { id: 'live', label: 'Live Monitor', icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
+            { id: 'history', label: 'History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
           ].map(btn => (
             <button
               key={btn.id}
@@ -81,6 +88,12 @@ export default function App() {
             <ModerationDashboard getStats={getStats} historyCount={history.length} />
           </ContainerScroll>
         )}
+
+        {/* Live Monitor view */}
+        {view === 'live' && <LiveMonitoring />}
+
+        {/* History view */}
+        {view === 'history' && <AnalysisHistory history={history} />}
 
         {/* Analyze view */}
         {view === 'analyze' && (
@@ -122,7 +135,11 @@ export default function App() {
 
             {/* Loading state */}
             <AnimatePresence>
-              {loading && <AnalysisProgress progress={uploadProgress} />}
+              {loading && (
+                isAsync
+                  ? <PipelineVisualization currentStep={currentStep} progress={asyncProgress} />
+                  : <AnalysisProgress progress={uploadProgress} />
+              )}
             </AnimatePresence>
 
             {/* Error */}
@@ -198,6 +215,13 @@ export default function App() {
                   />
 
                   <AIChatAssistant analysisId={results.job_id} analysisData={results} />
+
+                  {results.job_id && (
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1"><FeedbackPanel jobId={results.job_id} /></div>
+                      <ExportButton jobId={results.job_id} />
+                    </div>
+                  )}
 
                   {results.processing_time_ms && (
                     <p className="text-xs text-white/20 text-center">

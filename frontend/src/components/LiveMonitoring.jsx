@@ -71,7 +71,7 @@ export default function LiveMonitoring() {
   const connectSocket = useCallback(async () => {
     try {
       const { io } = await import('socket.io-client')
-      const sock = io(window.location.origin, {
+      const sock = io(import.meta.env.VITE_API_URL || 'https://violence-detection-service.onrender.com', {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
       })
