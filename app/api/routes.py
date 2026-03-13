@@ -156,7 +156,11 @@ def _store_predict_result(results, video_path, text_input):
         today = datetime.date.today().isoformat()
         stats = session.query(ModerationStats).filter_by(date=today).first()
         if not stats:
-            stats = ModerationStats(date=today)
+            stats = ModerationStats(
+                date=today, total_analyses=0, violations=0, reviews=0,
+                verified=0, avg_confidence=0.0, avg_processing_time_ms=0,
+                false_positives=0, false_negatives=0,
+            )
             session.add(stats)
 
         stats.total_analyses += 1
