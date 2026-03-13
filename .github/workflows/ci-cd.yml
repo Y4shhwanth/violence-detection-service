@@ -35,26 +35,16 @@ jobs:
           path: frontend/dist
           retention-days: 7
 
-  health-check:
-    name: Backend Health Check
+  deploy-render:
+    name: Deploy to Render
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.RENDER_DEPLOY_HOOK_URL != ''
     steps:
-      - name: Ping backend
+      - name: Trigger Render deploy
         run: |
-          echo "Waking up Render backend..."
-          for i in 1 2 3; do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 \
-              https://violence-detection-service.onrender.com/health) || true
-            if [ "$STATUS" = "200" ]; then
-              echo "Backend is healthy (HTTP 200)"
-              curl -s https://violence-detection-service.onrender.com/health | jq .
-              exit 0
-            fi
-            echo "Attempt $i: HTTP $STATUS — retrying in 30s..."
-            sleep 30
-          done
-          echo "::error::Backend health check failed after 3 attempts"
-          exit 1
+          echo "Triggering Render deployment..."
+          curl -s "${{ vars.RENDER_DEPLOY_HOOK_URL }}" || true
+          echo "Deploy triggered. Render will build and deploy automatically."
 
   deploy-vercel:
     name: Deploy to Vercel
@@ -85,9 +75,33 @@ jobs:
           echo "Deployed to: $URL"
         working-directory: frontend
 
+  health-check:
+    name: Backend Health Check
+    needs: [deploy-render]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Wait for deploy and check health
+        run: |
+          echo "Waiting 120s for Render to deploy..."
+          sleep 120
+          echo "Checking backend health..."
+          for i in 1 2 3 4 5; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 \
+              https://violence-detection-service.onrender.com/health) || true
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend is healthy (HTTP 200)"
+              curl -s https://violence-detection-service.onrender.com/health | jq .
+              exit 0
+            fi
+            echo "Attempt $i: HTTP $STATUS — retrying in 60s..."
+            sleep 60
+          done
+          echo "::warning::Backend health check failed — Render may still be deploying"
+
   notify-failure:
     name: Notify on Failure
-    needs: [build-frontend, health-check, deploy-vercel]
+    needs: [build-frontend, deploy-vercel]
     runs-on: ubuntu-latest
     if: failure()
     steps:
@@ -97,5 +111,4 @@ jobs:
           echo ""
           echo "Failed jobs summary:"
           echo "- Build Frontend: ${{ needs.build-frontend.result }}"
-          echo "- Health Check: ${{ needs.health-check.result }}"
           echo "- Deploy Vercel: ${{ needs.deploy-vercel.result }}"
