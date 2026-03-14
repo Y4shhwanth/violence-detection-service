@@ -23,7 +23,7 @@ def init_db(db_url: str = None):
         db_url = f'sqlite:///{os.path.join(db_path, "violence_detection.db")}'
 
     _engine = create_engine(db_url, echo=False, connect_args={'check_same_thread': False})
-    _SessionFactory = sessionmaker(bind=_engine)
+    _SessionFactory = sessionmaker(bind=_engine, expire_on_commit=False)
 
     Base.metadata.create_all(_engine)
     logger.info(f"Database initialized: {db_url}")
