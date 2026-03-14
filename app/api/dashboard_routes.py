@@ -78,8 +78,9 @@ def submit_feedback():
             # Look up original result
             original = session.query(AnalysisResult).filter_by(job_id=job_id).first()
 
+            feedback_id = str(uuid.uuid4())
             record = FeedbackRecord(
-                id=str(uuid.uuid4()),
+                id=feedback_id,
                 job_id=job_id,
                 feedback_type=feedback_type,
                 comment=data.get('comment', ''),
@@ -99,7 +100,7 @@ def submit_feedback():
                     else:
                         stats.false_negatives += 1
 
-        return jsonify({'success': True, 'feedback_id': record.id})
+        return jsonify({'success': True, 'feedback_id': feedback_id})
 
     except Exception as e:
         logger.error(f"Feedback submission failed: {e}")
