@@ -44,10 +44,15 @@ class ModelManager:
         self._image_classifier = None
         self._audio_classifier = None
 
+        # Skip ML entirely on low-memory hosts or when configured
+        self._skip_ml = self.config.skip_ml_models or self._detect_low_memory()
+        if self._skip_ml:
+            logger.warning("ML models disabled (low memory or SKIP_ML_MODELS=True). Using keyword-only analysis.")
+
         # Track models that failed to load (don't retry)
-        self._text_failed = False
-        self._image_failed = False
-        self._audio_failed = False
+        self._text_failed = self._skip_ml
+        self._image_failed = self._skip_ml
+        self._audio_failed = self._skip_ml
 
         # Loading timestamps for TTL
         self._text_loaded_at: Optional[float] = None
@@ -81,6 +86,23 @@ class ModelManager:
         # If not lazy loading, load models immediately
         if not self.config.lazy_load:
             self.load_all_models()
+
+    @staticmethod
+    def _detect_low_memory(threshold_mb: int = 1024) -> bool:
+        """Auto-detect if system has insufficient memory for ML models."""
+        try:
+            import psutil
+            mem = psutil.virtual_memory()
+            total_mb = mem.total / (1024 * 1024)
+            if total_mb < threshold_mb:
+                return True
+        except ImportError:
+            pass
+        # Also check Render-specific indicator
+        import os
+        if os.getenv('RENDER') == 'true':
+            return True
+        return False
 
     def _is_expired(self, loaded_at: Optional[float]) -> bool:
         """Check if a model has expired based on TTL."""

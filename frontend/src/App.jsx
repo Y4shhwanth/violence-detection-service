@@ -22,7 +22,7 @@ import AnalysisHistory from './components/AnalysisHistory'
 import GlassCard from './components/ui/GlassCard'
 import { Card, CardContent } from './components/ui/Card'
 import { Spotlight } from './components/ui/Spotlight'
-import { SplineScene } from './components/ui/SplineScene'
+// SplineScene removed — Spline CDN returns 403
 import { ContainerScroll } from './components/ui/ContainerScroll'
 import { useAnalysis } from './hooks/useAnalysis'
 import { useAnalysisHistory } from './hooks/useAnalysisHistory'
@@ -120,11 +120,12 @@ export default function App() {
                         powered by multimodal AI fusion analysis.
                       </p>
                     </CardContent>
-                    <div className="flex-1 relative min-h-[200px]">
-                      <SplineScene
-                        scene="https://prod.spline.design/kZDDjO5HuC9GJUM2/scene.splinecode"
-                        className="w-full h-full"
-                      />
+                    <div className="flex-1 relative min-h-[200px] flex items-center justify-center">
+                      <div className="w-32 h-32 rounded-3xl bg-gradient-to-br from-red-500/20 via-pink-500/10 to-purple-600/20 flex items-center justify-center border border-white/[0.06]">
+                        <svg className="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
                 </Card>

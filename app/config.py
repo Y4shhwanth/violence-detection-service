@@ -181,6 +181,11 @@ class ModelConfig:
         'AUDIO_MODEL', 'MIT/ast-finetuned-audioset-10-10-0.4593'
     ))
 
+    # Skip ML model loading entirely (for low-memory hosts like Render free tier)
+    skip_ml_models: bool = field(default_factory=lambda: os.getenv(
+        'SKIP_ML_MODELS', 'False'
+    ).lower() == 'true')
+
     # Lazy loading
     lazy_load: bool = field(default_factory=lambda: os.getenv(
         'LAZY_LOAD_MODELS', 'True'
