@@ -40,6 +40,10 @@ class AudioAnalyzer(BaseAnalyzer):
         Returns:
             Analysis result dictionary
         """
+        # Fail fast if audio classifier couldn't load
+        if self.model_manager.audio_classifier is None:
+            return self._create_error_result('Audio model not available (insufficient memory)')
+
         # Use enhanced analyzer when enabled
         config = get_config()
         if config.model.use_enhanced_models:

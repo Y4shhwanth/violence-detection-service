@@ -44,6 +44,11 @@ class ModelManager:
         self._image_classifier = None
         self._audio_classifier = None
 
+        # Track models that failed to load (don't retry)
+        self._text_failed = False
+        self._image_failed = False
+        self._audio_failed = False
+
         # Loading timestamps for TTL
         self._text_loaded_at: Optional[float] = None
         self._image_loaded_at: Optional[float] = None
@@ -87,7 +92,9 @@ class ModelManager:
     def text_classifier(self) -> Any:
         """Get text classifier, loading it if necessary."""
         with self._text_lock:
-            if self._text_classifier is None or self._is_expired(self._text_loaded_at):
+            if self._text_classifier is None and not self._text_failed:
+                self._load_text_model()
+            elif self._text_classifier is not None and self._is_expired(self._text_loaded_at):
                 self._load_text_model()
         return self._text_classifier
 
@@ -95,7 +102,9 @@ class ModelManager:
     def image_classifier(self) -> Optional[Any]:
         """Get image classifier, loading it if necessary."""
         with self._image_lock:
-            if self._image_classifier is None or self._is_expired(self._image_loaded_at):
+            if self._image_classifier is None and not self._image_failed:
+                self._load_image_model()
+            elif self._image_classifier is not None and self._is_expired(self._image_loaded_at):
                 self._load_image_model()
         return self._image_classifier
 
@@ -103,7 +112,9 @@ class ModelManager:
     def audio_classifier(self) -> Optional[Any]:
         """Get audio classifier, loading it if necessary."""
         with self._audio_lock:
-            if self._audio_classifier is None or self._is_expired(self._audio_loaded_at):
+            if self._audio_classifier is None and not self._audio_failed:
+                self._load_audio_model()
+            elif self._audio_classifier is not None and self._is_expired(self._audio_loaded_at):
                 self._load_audio_model()
         return self._audio_classifier
 
@@ -140,6 +151,7 @@ class ModelManager:
                 self._text_loaded_at = time.time()
                 logger.info("Fallback text model loaded")
             except Exception as fallback_error:
+                self._text_failed = True
                 logger.error(f"Failed to load fallback text model - Error: {str(fallback_error)}")
                 raise ModelError(
                     "Failed to load text model",
@@ -167,6 +179,7 @@ class ModelManager:
         except Exception as e:
             logger.warning(f"Failed to load image model, image analysis will be limited - Error: {str(e)}")
             self._image_classifier = None
+            self._image_failed = True
 
     def _load_audio_model(self) -> None:
         """Load audio classification model."""
@@ -188,6 +201,7 @@ class ModelManager:
         except Exception as e:
             logger.warning(f"Failed to load audio model, audio analysis will be limited - Error: {str(e)}")
             self._audio_classifier = None
+            self._audio_failed = True
 
     @property
     def videomae_model(self) -> Optional[Any]:

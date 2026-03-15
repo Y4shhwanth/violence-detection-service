@@ -120,7 +120,16 @@ export default function LiveMonitoring() {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.play()
+        // Wait for video metadata to load before playing
+        await new Promise((resolve) => {
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current.play().then(resolve).catch(resolve)
+          }
+          // Fallback if metadata already loaded
+          if (videoRef.current.readyState >= 1) {
+            videoRef.current.play().then(resolve).catch(resolve)
+          }
+        })
       }
 
       const sock = await connectSocket()
@@ -209,7 +218,7 @@ export default function LiveMonitoring() {
         <div className="grid md:grid-cols-2 gap-4">
           {/* Video feed */}
           <div className="relative bg-black/50 rounded-xl overflow-hidden aspect-video border border-white/[0.06]">
-            <video ref={videoRef} className="w-full h-full object-cover" muted playsInline />
+            <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
             <canvas ref={canvasRef} className="hidden" />
 
             {!isActive && (

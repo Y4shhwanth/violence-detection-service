@@ -38,6 +38,10 @@ class VideoAnalyzer(BaseAnalyzer):
             Analysis result dictionary
         """
         try:
+            # Fail fast if image classifier couldn't load (e.g. low-memory host)
+            if self.model_manager.image_classifier is None:
+                return self._create_error_result('Image model not available (insufficient memory)')
+
             self.logger.info(f"Analyzing video: {video_path}")
 
             cap = cv2.VideoCapture(video_path)
