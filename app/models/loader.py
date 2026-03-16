@@ -36,8 +36,14 @@ class ModelManager:
             return
 
         self.config = get_config().model
-        import torch
-        self._device = 0 if torch.cuda.is_available() else -1
+        # Defer torch import — on low-memory hosts we skip ML entirely
+        self._device = -1  # CPU default; updated if torch+CUDA available
+        if not self.config.skip_ml_models and not self._detect_low_memory():
+            try:
+                import torch
+                self._device = 0 if torch.cuda.is_available() else -1
+            except ImportError:
+                pass
 
         # Model storage
         self._text_classifier = None

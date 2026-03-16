@@ -14,7 +14,6 @@ Enhanced with:
 """
 from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor
-import numpy as np
 
 from .base import BaseAnalyzer
 from .text_analyzer import TextAnalyzer

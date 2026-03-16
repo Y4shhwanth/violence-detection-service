@@ -9,7 +9,6 @@ Transforms predictions into trustworthy, interpretable outputs with:
 - Risk level, compliance suggestion, and flagged keywords
 """
 from typing import Dict, Any, List, Optional
-import numpy as np
 
 from .logging import get_logger
 

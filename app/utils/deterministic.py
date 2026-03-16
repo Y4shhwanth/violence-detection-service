@@ -8,8 +8,6 @@ import random
 from contextlib import contextmanager
 from typing import Optional
 
-import numpy as np
-
 from .logging import get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +21,12 @@ def set_deterministic(seed: int = 42) -> None:
         seed: Random seed to use across all generators.
     """
     random.seed(seed)
-    np.random.seed(seed)
+
+    try:
+        import numpy as np
+        np.random.seed(seed)
+    except ImportError:
+        logger.warning("NumPy not available, skipping numpy seed")
 
     try:
         import torch

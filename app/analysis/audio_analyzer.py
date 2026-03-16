@@ -9,10 +9,6 @@ import tempfile
 from typing import Dict, Any, List, Optional
 from contextlib import contextmanager
 
-import numpy as np
-import librosa
-import torch
-
 from .base import BaseAnalyzer
 from ..config import get_config
 from ..models.loader import get_model_manager
@@ -75,6 +71,8 @@ class AudioAnalyzer(BaseAnalyzer):
                     )
 
                 # Load and analyze audio
+                import librosa
+                import torch
                 audio, sr = librosa.load(
                     audio_path,
                     sr=self.config.sample_rate,
@@ -207,8 +205,10 @@ class AudioAnalyzer(BaseAnalyzer):
 
         return violence_score, detected_sounds, reasoning_parts
 
-    def _analyze_audio_features(self, audio: np.ndarray) -> tuple:
+    def _analyze_audio_features(self, audio) -> tuple:
         """Analyze audio features for violence indicators."""
+        import numpy as np
+        import librosa
         feature_score = 0
         reasoning_parts = []
 
@@ -243,6 +243,7 @@ class AudioAnalyzer(BaseAnalyzer):
                     result['violations'] = []
                     return result
 
+                import librosa
                 audio, sr = librosa.load(
                     audio_path,
                     sr=self.config.sample_rate,

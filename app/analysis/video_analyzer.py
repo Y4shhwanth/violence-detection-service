@@ -3,12 +3,6 @@ Video content analyzer for Violence Detection System.
 Analyzes video frames for violence indicators with optimized frame extraction.
 """
 from typing import Dict, Any, List, Optional
-from concurrent.futures import ThreadPoolExecutor
-import numpy as np
-import cv2
-from PIL import Image
-
-import torch
 
 from .base import BaseAnalyzer
 from ..config import get_config
@@ -37,6 +31,8 @@ class VideoAnalyzer(BaseAnalyzer):
         Returns:
             Analysis result dictionary
         """
+        import cv2
+
         try:
             # Fail fast if image classifier couldn't load (e.g. low-memory host)
             if self.model_manager.image_classifier is None:
@@ -135,7 +131,7 @@ class VideoAnalyzer(BaseAnalyzer):
 
     def _extract_and_analyze_frames(
         self,
-        cap: cv2.VideoCapture,
+        cap,
         total_frames: int,
         fps: float,
         precomputed_indices: Optional[List[int]] = None
@@ -144,6 +140,7 @@ class VideoAnalyzer(BaseAnalyzer):
         Extract frames using optimized sequential skipping instead of seeking.
         This provides 40-60% speedup over random seeking.
         """
+        import numpy as np
         if precomputed_indices is not None:
             frame_indices = np.array(sorted(precomputed_indices), dtype=int)
         else:
@@ -192,11 +189,13 @@ class VideoAnalyzer(BaseAnalyzer):
 
         return frame_results
 
-    def _analyze_frame(self, frame: np.ndarray, prev_frame: Optional[np.ndarray] = None) -> Dict[str, Any]:
+    def _analyze_frame(self, frame, prev_frame=None) -> Dict[str, Any]:
         """
         Analyze a single frame for violence indicators.
         Consolidated frame analysis logic (removes duplication from original code).
         """
+        import numpy as np
+        import cv2
         violence_score = 0
         indicators = []
         reasoning_parts = []
@@ -278,11 +277,14 @@ class VideoAnalyzer(BaseAnalyzer):
 
     def _analyze_frame_ml(
         self,
-        frame: np.ndarray,
+        frame,
         classifier
     ) -> Optional[Dict[str, Any]]:
         """Analyze frame using ML image classifier."""
         try:
+            import cv2
+            import torch
+            from PIL import Image
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(frame_rgb)
             with torch.no_grad():
@@ -322,6 +324,7 @@ class VideoAnalyzer(BaseAnalyzer):
 
         # Re-extract frame results for temporal detection
         try:
+            import cv2
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
                 result['violations'] = []
@@ -363,6 +366,7 @@ class VideoAnalyzer(BaseAnalyzer):
         fps: float
     ) -> Dict[str, Any]:
         """Build the final analysis result with ML-dominant scoring."""
+        import numpy as np
         violence_scores = [f['score'] for f in frame_results]
         ml_scores = [f.get('ml_score', 0) for f in frame_results if 'ml_score' in f]
 

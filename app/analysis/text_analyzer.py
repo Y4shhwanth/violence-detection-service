@@ -5,8 +5,6 @@ Analyzes text for violence/toxicity with keyword detection and ML classification
 import re
 from typing import Dict, Any, List, Optional
 
-import torch
-
 from .base import BaseAnalyzer
 from ..config import get_config
 from ..models.loader import get_model_manager
@@ -161,6 +159,7 @@ class TextAnalyzer(BaseAnalyzer):
 
     def _analyze_with_ml(self, text: str) -> Dict[str, Any]:
         """Analyze text using ML model."""
+        import torch
         classifier = self.model_manager.text_classifier
         with torch.no_grad():
             result = classifier(text[:512])[0]
